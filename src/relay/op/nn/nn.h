@@ -69,6 +69,48 @@ bool DenseRel(const Array<Type>& types, int num_inputs, const Attrs& attrs,
   return true;
 }
 
+
+template <typename AttrType>
+bool NvdlaFcRel(const Array<Type>& types, int num_inputs, const Attrs& attrs,
+              const TypeReporter& reporter) {
+  CHECK_GE(types.size(), 3);
+  const auto* data = types[0].as<TensorTypeNode>();
+  const auto* weight = types[1].as<TensorTypeNode>();
+  const auto* bias = types[2].as<TensorTypeNode>();
+  if (data == nullptr) return false;
+
+  const AttrType* param = attrs.as<AttrType>();
+  CHECK(param != nullptr);
+
+  CHECK(static_cast<int>(data->shape.size()) != 0);
+  Array<tvm::Expr> oshape = data->shape;
+
+  if (param->units.defined()) {
+    Array<tvm::Expr> dshape = data->shape;
+    // validate the weight shape is proper if defined
+    // Assign weight type
+    Array<IndexExpr> wshape({param->units, dshape[dshape.size() - 1]});
+    // It is possible for weight to be nullptr in which case we will use
+    // data dtype as the weight dtype. However if weight dtype is explicitly
+    // present we will use that.
+    auto weight_dtype = (weight == nullptr ? data->dtype : weight->dtype);
+    reporter->Assign(types[1], TensorTypeNode::make(wshape, weight_dtype));
+    oshape.Set((oshape.size() - 1), param->units);
+  } else {
+    if (weight == nullptr) return false;
+    Array<tvm::Expr> wshape = weight->shape;
+    oshape.Set((oshape.size() - 1), wshape[0]);
+  }
+
+  DataType out_dtype = param->out_dtype;
+  if (out_dtype.bits() == 0) {
+    out_dtype = data->dtype;
+  }
+  // assign output type
+  reporter->Assign(types[3], TensorTypeNode::make(oshape, out_dtype));
+  return true;
+}
+
 }  // namespace relay
 }  // namespace tvm
 #endif  // TVM_RELAY_OP_NN_NN_H_

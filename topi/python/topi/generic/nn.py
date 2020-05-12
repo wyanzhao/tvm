@@ -69,6 +69,22 @@ def schedule_conv2d_nchw(outs):
     """
     return _default_schedule(outs, False)
 
+@tvm.target.generic_func
+def schedule_nvdla_conv2d_nchw(outs):
+    """Schedule for conv2d_nchw
+
+    Parameters
+    ----------
+    outs: Array of Tensor
+          The computation graph description of conv2d_nchw
+          in the format of an array of tensors.
+
+    Returns
+    -------
+    sch: Schedule
+        The computation schedule for the op.
+    """
+    return _default_schedule(outs, False)
 
 @tvm.target.generic_func
 def schedule_conv2d_nhwc_pack(outs):
@@ -437,8 +453,46 @@ def schedule_dense(outs):
     return _default_schedule(outs, False)
 
 
+@tvm.target.override_native_generic_func("schedule_nvdla_fc")
+def schedule_nvdla_fc(outs):
+    """Schedule for nvdla_fc
+
+    Parameters
+    ----------
+    outs: Array of Tensor
+          The computation graph description of dense
+          in the format of an array of tensors.
+
+    Returns
+    -------
+    sch: Schedule
+        The computation schedule for the op.
+    """
+    return _default_schedule(outs, False)
+
+
 @tvm.target.override_native_generic_func("schedule_pool")
 def schedule_pool(outs, layout):
+    """Schedule for pool
+
+    Parameters
+    ----------
+    outs: Array of Tensor
+          The computation graph description of pool
+          in the format of an array of tensors.
+
+    layout: str
+        Data layout.
+
+    Returns
+    -------
+    sch: Schedule
+        The computation schedule for the op.
+    """
+    return _default_schedule(outs, False)
+
+@tvm.target.override_native_generic_func("schedule_pool_nvdla")
+def schedule_pool_nvdla(outs, layout, attrs=None):
     """Schedule for pool
 
     Parameters

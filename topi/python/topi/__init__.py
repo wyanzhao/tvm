@@ -50,6 +50,7 @@ from . import intel_graphics
 from . import opengl
 from . import util
 from . import rocm
+from . import nvdla
 from . import vision
 from . import image
 from . import sparse

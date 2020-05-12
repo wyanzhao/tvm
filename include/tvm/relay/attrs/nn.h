@@ -366,6 +366,22 @@ struct DenseAttrs : public tvm::AttrsNode<DenseAttrs> {
   }
 };
 
+struct NvdlaFcAttrs : public tvm::AttrsNode<NvdlaFcAttrs> {
+  IndexExpr units;
+  DataType out_dtype;
+
+    TVM_DECLARE_ATTRS(NvdlaFcAttrs, "relay.attrs.NvdlaFcAttrs") {
+    TVM_ATTR_FIELD(units)
+        .describe("Number of hidden units of the dense transformation.");
+
+    // use 0 bits to indicate none.
+    TVM_ATTR_FIELD(out_dtype)
+        .set_default(NullValue<DataType>())
+        .describe("Output data type, set to explicit type under mixed precision setting");
+  }
+};
+
+
 /*! \brief Attributes for sparse_dense operator */
 struct SparseDenseAttrs : public tvm::AttrsNode<SparseDenseAttrs> {
   TVM_DECLARE_ATTRS(SparseDenseAttrs, "relay.attrs.SparseDenseAttrs") {}

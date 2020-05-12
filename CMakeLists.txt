@@ -21,6 +21,7 @@ endif()
 # You can create a config.cmake at build folder
 # and add set(OPTION VALUE) to override these build options.
 # Alernatively, use cmake -DOPTION=VALUE through command-line.
+tvm_option(USE_NVDLA "Build with nvdla support" ON)
 tvm_option(USE_CUDA "Build with CUDA" OFF)
 tvm_option(USE_OPENCL "Build with OpenCL" OFF)
 tvm_option(USE_VULKAN "Build with Vulkan" OFF)
@@ -72,8 +73,12 @@ include_directories(${DMLC_PATH})
 include_directories(${RANG_PATH})
 include_directories(${COMPILER_RT_PATH})
 include_directories(${PICOJSON_PATH})
+include_directories("nvdla/include"
+"nvdla/external/include" "nvdla/src/compiler/include"
+"nvdla/port/linux" "nvdla/src/common/include")
 
 # initial variables
+set(NVDLA_LIB "/home/dev/Workspace/tvm/nvdla/out/libnvdla_compiler.so" "/home/dev/.local/protobuf/lib/libprotobuf.so")
 set(TVM_LINKER_LIBS "")
 set(TVM_RUNTIME_LINKER_LIBS ${CMAKE_DL_LIBS})
 
@@ -257,6 +262,7 @@ include(cmake/modules/contrib/MicroStandaloneRuntime.cmake)
 include(cmake/modules/contrib/Sort.cmake)
 include(cmake/modules/contrib/NNPack.cmake)
 include(cmake/modules/contrib/HybridDump.cmake)
+include(cmake/modules/contrib/NVDLA.cmake)
 
 if(NOT MSVC)
   include(CheckCXXCompilerFlag)
@@ -302,6 +308,7 @@ if(USE_THREADS)
   target_link_libraries(nnvm_compiler Threads::Threads)
 endif(USE_THREADS)
 
+target_link_libraries(tvm ${TVM_LINKER_LIBS} ${NVDLA_LIB})
 target_link_libraries(tvm ${TVM_LINKER_LIBS} ${TVM_RUNTIME_LINKER_LIBS})
 target_link_libraries(tvm_topi tvm ${TVM_LINKER_LIBS} ${TVM_RUNTIME_LINKER_LIBS})
 target_link_libraries(tvm_runtime ${TVM_RUNTIME_LINKER_LIBS})

@@ -62,6 +62,15 @@ def compute_dense(attrs, inputs, out_type, target):
     return [topi.nn.dense(inputs[0], inputs[1], None, out_dtype)]
 
 
+@reg.register_compute("nn.nvdla_fc")
+def compute_nvdla_fc(attrs, inputs, out_type, target):
+    """Compute definition of dense"""
+    out_dtype = attrs.out_dtype
+    out_dtype = inputs[0].dtype if out_dtype == "" else out_dtype
+    num_output = attrs.get_int('units')
+    return [topi.nn.nvdla_fc(inputs[0], inputs[1], inputs[2], num_output, out_dtype)]
+
+
 @reg.register_schedule("nn.dense")
 def schedule_dense(attrs, outputs, target):
     """Schedule definition of dense"""
@@ -69,6 +78,17 @@ def schedule_dense(attrs, outputs, target):
         return topi.generic.schedule_dense(outputs)
 
 
+@reg.register_schedule("nn.nvdla_fc")
+def schedule_nvdla_fc(attrs, outputs, target):
+    """Schedule definition of dense"""
+    #if 'nvdla' == target.device_name:
+    with target:
+        return topi.generic.schedule_nvdla_fc(outputs)
+    #else:
+    #    raise ValueError("Unsupport Platform on Nvdla Fc Op:{}".format(target))
+
+
+reg.register_pattern("nn.nvdla_fc", reg.OpPattern.OUT_ELEMWISE_FUSABLE)
 reg.register_pattern("nn.dense", reg.OpPattern.OUT_ELEMWISE_FUSABLE)
 
 
@@ -184,6 +204,99 @@ def compute_conv2d(attrs, inputs, out_type, target):
         raise ValueError("not support arbitrary group number for now")
     return [out]
 
+@reg.register_compute("nn.nvdla_conv2d")
+def compute_nvdla_conv2d(attrs, inputs, out_type, target):
+    """Compute definition of conv2d"""
+    padding = get_const_tuple(attrs.padding)
+    strides = get_const_tuple(attrs.strides)
+    dilation = get_const_tuple(attrs.dilation)
+    groups = attrs.groups
+    layout = attrs.data_layout
+    kernel_layout = attrs.kernel_layout
+    out_dtype = attrs.out_dtype
+    out_dtype = (inputs[0].dtype if out_dtype in ("same", "")
+                 else out_dtype)
+
+    assert layout in ["NCHW", "NHWC", "NCHW4c", "HWCN"]
+    (dilation_h, dilation_w) = dilation
+    if dilation_h < 1 or dilation_w < 1:
+        raise ValueError("dilation should be positive value")
+
+    def _get_out_depth():
+        weight_shape = get_const_tuple(inputs[1].shape)
+        if kernel_layout.startswith("HW"):
+            return weight_shape[2] * weight_shape[3]
+        return weight_shape[0] * weight_shape[1]
+
+    if groups == 1:
+            out = topi.nn.nvdla_conv2d(
+            inputs[0], inputs[1], strides, padding,
+            dilation, None, layout, out_dtype)
+    else:
+        raise ValueError("not support arbitrary group number for now")
+    return [out]
+
+@reg.register_compute("nn.nvdla_conv2d_bias")
+def compute_nvdla_conv2d_bias(attrs, inputs, out_type, target):
+    """Compute definition of conv2d"""
+    padding = get_const_tuple(attrs.padding)
+    strides = get_const_tuple(attrs.strides)
+    dilation = get_const_tuple(attrs.dilation)
+    groups = attrs.groups
+    layout = attrs.data_layout
+    kernel_layout = attrs.kernel_layout
+    out_dtype = attrs.out_dtype
+    out_dtype = (inputs[0].dtype if out_dtype in ("same", "")
+                 else out_dtype)
+
+    assert layout in ["NCHW", "NHWC", "NCHW4c", "HWCN"]
+    (dilation_h, dilation_w) = dilation
+    if dilation_h < 1 or dilation_w < 1:
+        raise ValueError("dilation should be positive value")
+
+    def _get_out_depth():
+        weight_shape = get_const_tuple(inputs[1].shape)
+        if kernel_layout.startswith("HW"):
+            return weight_shape[2] * weight_shape[3]
+        return weight_shape[0] * weight_shape[1]
+
+    if groups == 1:
+            out = topi.nn.nvdla_conv2d_bias(
+            inputs[0], inputs[1], strides, padding,
+            dilation, inputs[2], layout, out_dtype)
+    else:
+        raise ValueError("not support arbitrary group number for now")
+    return [out]
+
+
+@reg.register_schedule("nn.nvdla_conv2d")
+def schedule_nvdla_conv2d(attrs, outs, target):
+    """Schedule definition of conv2d"""
+    groups = attrs.groups
+    layout = attrs.data_layout
+    kernel_layout = attrs.kernel_layout
+
+    with target:
+        if groups == 1 and layout == "NCHW":
+            return topi.generic.schedule_nvdla_conv2d_nchw(outs)
+        elif groups == 1 and layout == "NCHW4c":
+            return topi.generic.schedule_nvdla_conv2d_nchw(outs)
+    raise ValueError("No compatible schedule")
+
+
+@reg.register_schedule("nn.nvdla_conv2d_bias")
+def schedule_nvdla_conv2d_bias(attrs, outs, target):
+    """Schedule definition of conv2d"""
+    groups = attrs.groups
+    layout = attrs.data_layout
+    kernel_layout = attrs.kernel_layout
+
+    with target:
+        if groups == 1 and layout == "NCHW":
+            return topi.generic.schedule_nvdla_conv2d_nchw(outs)
+        elif groups == 1 and layout == "NCHW4c":
+            return topi.generic.schedule_nvdla_conv2d_nchw(outs)
+    raise ValueError("No compatible schedule")
 
 @reg.register_schedule("nn.conv2d")
 def schedule_conv2d(attrs, outs, target):
@@ -246,6 +359,8 @@ def legalize_conv2d(attrs, inputs, types):
     return topi.nn.conv2d_legalize(attrs, inputs, types)
 
 reg.register_pattern("nn.conv2d", OpPattern.OUT_ELEMWISE_FUSABLE)
+reg.register_pattern("nn.nvdla_conv2d", OpPattern.OUT_ELEMWISE_FUSABLE)
+reg.register_pattern("nn.nvdla_conv2d_bias", OpPattern.OUT_ELEMWISE_FUSABLE)
 
 
 # conv2d_transpose
@@ -311,7 +426,10 @@ def schedule_max_pool2d(attrs, outs, target):
     """Schedule definition of max_pool2d"""
     layout = attrs.layout
     with target:
-        return topi.generic.schedule_pool(outs, layout)
+        if target.device_name == 'nvdla':
+            return topi.generic.schedule_pool_nvdla(outs, layout, attrs)
+        else:
+            return topi.generic.schedule_pool(outs, layout)
 
 
 reg.register_pattern("nn.max_pool2d", OpPattern.OUT_ELEMWISE_FUSABLE)

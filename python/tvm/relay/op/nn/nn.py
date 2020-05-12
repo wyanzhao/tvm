@@ -106,6 +106,40 @@ def conv2d(data,
                         kernel_layout, out_layout, out_dtype)
 
 
+def nvdla_conv2d_bias(data,
+           weight,
+           bias=None,
+           strides=(1, 1),
+           padding=(0, 0),
+           dilation=(1, 1),
+           groups=1,
+           channels=None,
+           kernel_size=None,
+           data_layout="NCHW",
+           kernel_layout="OIHW",
+           out_layout="",
+           out_dtype=""):
+    return _make.nvdla_conv2d_bias(data, weight, bias, strides, padding, dilation,
+                        groups, channels, kernel_size, data_layout,
+                        kernel_layout, out_layout, out_dtype)
+
+def nvdla_conv2d(data,
+           weight,
+           strides=(1, 1),
+           padding=(0, 0),
+           dilation=(1, 1),
+           groups=1,
+           channels=None,
+           kernel_size=None,
+           data_layout="NCHW",
+           kernel_layout="OIHW",
+           out_layout="",
+           out_dtype=""):
+    return _make.nvdla_conv2d(data, weight, strides, padding, dilation,
+                        groups, channels, kernel_size, data_layout,
+                        kernel_layout, out_layout, out_dtype)
+
+
 def conv2d_transpose(data,
                      weight,
                      strides=(1, 1),
@@ -603,6 +637,10 @@ def dense(data, weight, units=None, out_dtype=""):
         The computed result.
     """
     return _make.dense(data, weight, units, out_dtype)
+
+
+def nvdla_fc(data, weight, bias=None, units=None, out_dtype=""):
+    return _make.nvdla_fc(data, weight, bias, units, out_dtype)
 
 
 def fifo_buffer(data, buffer, axis):

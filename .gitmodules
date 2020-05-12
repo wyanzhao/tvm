@@ -7,3 +7,6 @@
 [submodule "3rdparty/rang"]
 	path = 3rdparty/rang
 	url = https://github.com/agauniyal/rang
+[submodule "nvdla"]
+	path = nvdla
+	url = git@github.com:wyanzhao/nvdla_lib.git

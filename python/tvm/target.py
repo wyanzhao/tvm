@@ -506,6 +506,15 @@ def vta(model='unknown', options=None):
     return ret
 
 
+def nvdla(model='unknown', options=None):
+    opts = ["-device=nvdla"]
+    opts = _merge_opts(opts, options)
+    if "-debug" in opts:
+        return _api_internal._TargetCreate("c", *opts)
+    else:
+        return _api_internal._TargetCreate("llvm", *opts)
+
+
 def bifrost(model='unknown', options=None):
     """Return an ARM Mali GPU target (Bifrost architecture).
 

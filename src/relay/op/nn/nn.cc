@@ -201,6 +201,44 @@ RELAY_REGISTER_OP("nn.dense")
 .set_support_level(1)
 .add_type_rel("Dense", DenseRel<DenseAttrs>);
 
+
+TVM_REGISTER_NODE_TYPE(NvdlaFcAttrs);
+
+// Positional relay function to create dense operator used by frontend FFI.
+Expr MakeNvdlaFc(Expr data,
+               Expr weight,
+               Expr bias,
+               IndexExpr units,
+               DataType out_dtype) {
+  auto attrs = make_node<NvdlaFcAttrs>();
+  attrs->units = units;
+  attrs->out_dtype = out_dtype;
+  static const Op& op = Op::Get("nn.nvdla_fc");
+  return CallNode::make(op, {data, weight, bias}, Attrs(attrs), {});
+}
+
+
+TVM_REGISTER_API("relay.op.nn._make.nvdla_fc")
+.set_body_typed(MakeNvdlaFc);
+
+
+RELAY_REGISTER_OP("nn.nvdla_fc")
+.describe(R"code(Applies a linear transformation: :math:`Y = XW^T`.
+
+- **data**: `(x1, x2, ..., xn, input_dim)`
+- **weight**: `(units, input_dim)`
+- **out**: `(x1, x2, ..., xn, units)`.
+
+)code" TVM_ADD_FILELINE)
+.set_attrs_type<NvdlaFcAttrs>()
+.set_num_inputs(3)
+.add_argument("data", "nD Tensor", "Input data.")
+.add_argument("weight", "2D Tensor", "Weight matrix.")
+.add_argument("bias", "Tensor", "bias data.")
+.set_support_level(3)
+.add_type_rel("NvdlaFc", NvdlaFcRel<NvdlaFcAttrs>);
+
+
 // relay.leaky_relu
 TVM_REGISTER_NODE_TYPE(LeakyReluAttrs);
 

@@ -55,6 +55,10 @@ class DenseAttrs(Attrs):
 
 
 @register_relay_attr_node
+class NvdlaFcAttrs(Attrs):
+    """Attributes for nn.nvdla_fc"""
+
+@register_relay_attr_node
 class FIFOBufferAttrs(Attrs):
     """Attributes for nn.fifo_buffer"""
 
