@@ -58,14 +58,14 @@ network = relay.nn.bias_add(network, b4)
 
 func = relay.Function([x, w1, b1, w2, b2, w3, b3, w4, b4], network)
 
-w1_data = np.load("/home/dev/lenet-test/tensor.npy")
-b1_data = np.load("/home/dev/lenet-test/tensor1.npy")
-w2_data = np.load("/home/dev/lenet-test/tensor2.npy")
-b2_data = np.load("/home/dev/lenet-test/tensor3.npy")
-w3_data = np.load("/home/dev/lenet-test/tensor4.npy")
-b3_data = np.load("/home/dev/lenet-test/tensor5.npy")
-w4_data = np.load("/home/dev/lenet-test/tensor6.npy")
-b4_data = np.load("/home/dev/lenet-test/tensor7.npy")
+w1_data = np.load("lenet-test/tensor.npy")
+b1_data = np.load("lenet-test/tensor1.npy")
+w2_data = np.load("lenet-test/tensor2.npy")
+b2_data = np.load("lenet-test/tensor3.npy")
+w3_data = np.load("lenet-test/tensor4.npy")
+b3_data = np.load("lenet-test/tensor5.npy")
+w4_data = np.load("lenet-test/tensor6.npy")
+b4_data = np.load("lenet-test/tensor7.npy")
 
 
 params = {'w1': tvm.nd.array(w1_data), "b1": tvm.nd.array(b1_data), 

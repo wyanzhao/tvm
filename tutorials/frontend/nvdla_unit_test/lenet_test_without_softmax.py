@@ -75,7 +75,7 @@ nv_precision = "int8"
 
 set_nvdla_config(nv_config, nv_precision)
 
-with open("/home/dev/lenet-test/quantize_weight.json", "r") as f:
+with open("lenet-test/quantize_weight.json", "r") as f:
     import json
     scale_json = json.load(f)
 from nvdla.nvdla_utils import nvdla_graph_info
@@ -84,14 +84,14 @@ nvdla_graph_info['op_infos'][14]['input_index'][0] = 12
 nvdla_graph_info['scale_info'] = scale_json
 
 
-w1_data = np.load("/home/dev/lenet-test/tensor.npy")
-b1_data = np.load("/home/dev/lenet-test/tensor1.npy")
-w2_data = np.load("/home/dev/lenet-test/tensor2.npy")
-b2_data = np.load("/home/dev/lenet-test/tensor3.npy")
-w3_data = np.load("/home/dev/lenet-test/tensor4.npy")
-b3_data = np.load("/home/dev/lenet-test/tensor5.npy")
-w4_data = np.load("/home/dev/lenet-test/tensor6.npy")
-b4_data = np.load("/home/dev/lenet-test/tensor7.npy")
+w1_data = np.load("lenet-test/tensor.npy")
+b1_data = np.load("lenet-test/tensor1.npy")
+w2_data = np.load("lenet-test/tensor2.npy")
+b2_data = np.load("lenet-test/tensor3.npy")
+w3_data = np.load("lenet-test/tensor4.npy")
+b3_data = np.load("lenet-test/tensor5.npy")
+w4_data = np.load("lenet-test/tensor6.npy")
+b4_data = np.load("lenet-test/tensor7.npy")
 
 #NVDLA backend
 params = {'w1': tvm.nd.array(w1_data), "b1": tvm.nd.array(b1_data), 
