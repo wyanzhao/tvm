@@ -232,3 +232,8 @@ conda/pkg
 # antlr files
 *.tokens
 *.interp
+
+# nvdla files
+*.nvdla
+*.json
+*.protobuf

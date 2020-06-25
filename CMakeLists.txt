@@ -78,7 +78,7 @@ include_directories("nvdla/include"
 "nvdla/port/linux" "nvdla/src/common/include")
 
 # initial variables
-set(NVDLA_LIB "/home/dev/Workspace/tvm/nvdla/out/libnvdla_compiler.so" "/home/dev/.local/protobuf/lib/libprotobuf.so")
+set(NVDLA_LIB "")
 set(TVM_LINKER_LIBS "")
 set(TVM_RUNTIME_LINKER_LIBS ${CMAKE_DL_LIBS})
 

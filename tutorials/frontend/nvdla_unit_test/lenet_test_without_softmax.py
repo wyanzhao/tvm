@@ -32,7 +32,6 @@ For example, to use cuDNN, USE_CUDNN option in `cmake/config.cmake` needs to be 
 To begin with, we import Relay and TVM.
 """
 import tvm
-from tvm import te
 import numpy as np
 from tvm.contrib import graph_runtime as runtime
 from tvm import relay
@@ -70,7 +69,11 @@ func = relay.Function([x, w1, b1, w2, b2, w3, b3, w4, b4], network)
 
 from nvdla.nvdla_utils import nvdla_analyze_compute_graph, set_nvdla_config
 nvdla_analyze_compute_graph(func, 9, [0, 1])
-set_nvdla_config("nv_small", "int8")
+
+nv_config = "nv_small"
+nv_precision = "int8"
+
+set_nvdla_config(nv_config, nv_precision)
 
 with open("/home/dev/lenet-test/quantize_weight.json", "r") as f:
     import json
@@ -105,7 +108,7 @@ target = tvm.target.nvdla(options=[])
 with relay.build_config(opt_level=0, disabled_pass=["AlterOpLayout", "SimplifyInference"]):
     graph, lib, params = relay.build(func, target, params=params)
 
-print(lib.get_source())
+#print(lib.get_source())
 
 module = tvm.contrib.graph_runtime.create(graph, lib, tvm.cpu())
     # set input and parameters

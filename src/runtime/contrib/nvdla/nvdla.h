@@ -33,7 +33,7 @@ namespace tvm {
 namespace runtime {
 namespace contrib {
 
-extern "C" void nvdlaInit();
+extern "C" void nvdlaVoid();
 }  // namespace contrib
 }  // namespace runtime
 }  // namespace tvm

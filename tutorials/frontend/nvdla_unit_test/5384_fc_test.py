@@ -32,317 +32,46 @@ For example, to use cuDNN, USE_CUDNN option in `cmake/config.cmake` needs to be 
 To begin with, we import Relay and TVM.
 """
 import tvm
-from tvm import te
 import numpy as np
 from tvm.contrib import graph_runtime as runtime
 from tvm import relay
 from tvm.relay import testing
 
-from tvm.nvdla_utils import nvdla_graph_info
-
 dtype="float32"
-data_shape = (1, 1, 5, 7)
-weight_shape = (1, 1, 1, 1)
+data_shape = (1, 1, 28, 28)
+weight_shape = (20, 1, 5, 5)
 x = relay.var("x",
                      shape=data_shape,
                      dtype=dtype)
-w = relay.var("w", shape=weight_shape, dtype=dtype)
+w1 = relay.var("w1", shape=weight_shape, dtype=dtype)
+b1 = relay.var("b1", shape=(20, ), dtype=dtype)
 
-network = relay.nn.nvdla_conv2d(x, w, strides=(1, 1,), padding=(0, 0), dilation=(1, 1), groups=1, channels=1, data_layout="NCHW")
-network = relay.nn.batch_flatten(network)
+network = relay.nn.nvdla_conv2d_bias(x, w1, b1, strides=(1, 1,), padding=(0, 0), dilation=(1, 1), groups=1, channels=20, data_layout="NCHW")
 
-w1 = relay.var("w1", shape=(4, 35))
-bias = relay.var("bias", shape=(4, ), dtype=dtype)
+func = relay.Function([x, w1, b1], network)
 
-network = relay.nn.nvdla_fc(network, weight=w1, bias=bias, units=4, out_dtype=dtype)
+from nvdla.nvdla_utils import nvdla_analyze_compute_graph, set_nvdla_config
+nvdla_analyze_compute_graph(func, 3, [0, 1])
 
-func = relay.Function([x, w, w1, bias], network)
+nv_config = "nv_medium_1024"
+nv_precision = "int8"
 
-# Reference result
-network_ref = relay.nn.conv2d(x, w, strides=(1, 1,), padding=(0, 0), dilation=(1, 1), groups=1, channels=1, data_layout="NCHW")
-network_ref = relay.nn.batch_flatten(network_ref)
-network_ref = relay.nn.dense(network, weight=w1, units=4, out_dtype=dtype)
-network_ref = relay.nn.bias_add(network_ref, bias)
-func_ref = relay.Function([x, w, w1, bias], network_ref)
+set_nvdla_config(nv_config, nv_precision)
 
-from tvm.autotvm.graph_tuner.utils import has_multiple_inputs, get_direct_ancestor, get_in_nodes, get_out_nodes, expr2graph, bind_inputs
-node_list = []
-node_dict = {}
-target_ops = []
-expr2graph(func, target_ops, node_dict, node_list)
-    
-global nvdla_graph_info
-nvdla_graph_info["input_op"] = [node_list[4], node_list[0], node_list[1]]
-for x in node_list:
-        node = {}
-        if len(x['inputs']) != 0:
-            node['name'] = x['op']
-            node['node'] = x['node']
-            node['input_shapes'] = []
-            node['input_index'] = []
-            node['op_shape'] = [int(x) for x in x['types'][0].shape]
+with open("/home/dev/lenet-test/quantize_weight_test.json", "r") as f:
+    import json
+    scale_json = json.load(f)
+from nvdla.nvdla_utils import nvdla_graph_info
 
-            for y in x['inputs']:
-                input_index = y[0]
-                shape = [int(x) for x in node_list[input_index]['types'][0].shape]
-                if node_list[input_index]['op'] == 'null':
-                    node['is_const'] = True
-                else:
-                    node['is_const'] = False
-                node['input_shapes'].append(shape)
-                node['input_index'].append(input_index)
-            
-            if nvdla_graph_info['op_maps'].get(x['op']) != None:
-                if x['op'] == 'nvdla_conv2d':
-                    nvdla_graph_info['op_maps']['conv2d'].append(node)
-                else:
-                    nvdla_graph_info['op_maps'][x['op']].append(node)
-            else:
-                print('Unsupport Op:{}'.format(x['op']))
-        else:
-            node['name'] = x['op']
-            node['node'] = x['node']
-            node['op_shape'] = [int(x) for x in x['types'][0].shape]
-            node['input_shapes'] = []
-            node['input_index'] = []
-        
-        nvdla_graph_info['op_infos'].append(node)
-nvdla_graph_info["output_op"] = node_list[-1]
-nvdla_graph_info['op_infos'][6]['input_index'][0] = 4
+nvdla_graph_info['scale_info'] = scale_json
 
-kernel = np.array([
-    [
-        [
-            [
-                1
-            ]
-        ]
-    ]
-]
-, dtype="float32")
-fc_kernel = np.reshape(np.array(
-    [
-    [
-        3,
-        3,
-        3,
-        2
-    ],
-    [
-        3,
-        1,
-        3,
-        2
-    ],
-    [
-        3,
-        3,
-        1,
-        1
-    ],
-    [
-        3,
-        2,
-        1,
-        3
-    ],
-    [
-        1,
-        3,
-        2,
-        3
-    ],
-    [
-        3,
-        4,
-        4,
-        2
-    ],
-    [
-        4,
-        3,
-        2,
-        2
-    ],
-    [
-        3,
-        2,
-        1,
-        4
-    ],
-    [
-        3,
-        3,
-        3,
-        3
-    ],
-    [
-        1,
-        4,
-        2,
-        1
-    ],
-    [
-        4,
-        1,
-        1,
-        2
-    ],
-    [
-        3,
-        2,
-        1,
-        2
-    ],
-    [
-        1,
-        1,
-        3,
-        3
-    ],
-    [
-        4,
-        3,
-        1,
-        2
-    ],
-    [
-        1,
-        3,
-        2,
-        4
-    ],
-    [
-        2,
-        1,
-        3,
-        1
-    ],
-    [
-        4,
-        1,
-        4,
-        2
-    ],
-    [
-        4,
-        3,
-        3,
-        1
-    ],
-    [
-        2,
-        4,
-        3,
-        2
-    ],
-    [
-        4,
-        4,
-        3,
-        3
-    ],
-    [
-        3,
-        3,
-        1,
-        4
-    ],
-    [
-        4,
-        2,
-        1,
-        2
-    ],
-    [
-        4,
-        1,
-        3,
-        4
-    ],
-    [
-        4,
-        1,
-        4,
-        4
-    ],
-    [
-        3,
-        2,
-        1,
-        4
-    ],
-    [
-        2,
-        2,
-        2,
-        3
-    ],
-    [
-        3,
-        2,
-        1,
-        1
-    ],
-    [
-        2,
-        3,
-        3,
-        2
-    ],
-    [
-        1,
-        4,
-        1,
-        4
-    ],
-    [
-        1,
-        1,
-        2,
-        4
-    ],
-    [
-        1,
-        2,
-        2,
-        4
-    ],
-    [
-        3,
-        4,
-        2,
-        2
-    ],
-    [
-        2,
-        1,
-        1,
-        4
-    ],
-    [
-        4,
-        1,
-        2,
-        4
-    ],
-    [
-        3,
-        3,
-        2,
-        2
-    ]
-], dtype=dtype
-), (4, 35))
-bias_ = np.array([
-    3,
-    2,
-    3,
-    2
-], dtype=dtype)
+w1_data = np.load("/home/dev/lenet-test/tensor.npy")
+np.savetxt("foo.txt", w1_data.reshape((500,)), delimiter=",", newline=",")
+
+b1_data = np.load("/home/dev/lenet-test/tensor1.npy")
 
 #NVDLA backend
-params = {'w': tvm.nd.array(kernel), "w1": tvm.nd.array(fc_kernel), "bias": tvm.nd.array(bias_)}
+params = {'w1': tvm.nd.array(w1_data), "b1": tvm.nd.array(b1_data)}
 
 #target = tvm.target.nvdla(options=["-debug"])
 target = tvm.target.nvdla(options=[])
@@ -359,47 +88,3 @@ module.set_input('x', tvm.nd.array(x_data))
 module.set_input(**params)
 # run
 module.run()
-
-params = {'w': tvm.nd.array(kernel), "w1": tvm.nd.array(fc_kernel), "bias": tvm.nd.array(bias_)}
-
-target = "llvm"
-
-with relay.build_config(opt_level=0, disabled_pass=["AlterOpLayout", "SimplifyInference"]):
-    graph, lib, params = relay.build(func_ref, target, params=params)
-
-module = tvm.contrib.graph_runtime.create(graph, lib, tvm.cpu())
-    # set input and parameters
-def read_pgm(filename, byteorder='>'):
-    import re
-    import numpy
-    """Return image data from a raw PGM file as numpy array.
-
-    Format specification: http://netpbm.sourceforge.net/doc/pgm.html
-
-    """
-    with open(filename, 'rb') as f:
-        buffer = f.read()
-    try:
-        header, width, height, maxval = re.search(
-            b"(^P5\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n]\s)*)", buffer).groups()
-    except AttributeError:
-        raise ValueError("Not a raw PGM file: '%s'" % filename)
-    return numpy.frombuffer(buffer,
-                            dtype='u1' if int(maxval) < 256 else byteorder+'u2',
-                            count=int(width)*int(height),
-                            offset=len(header)
-                            ).reshape((int(height), int(width)))
-
-x_data = read_pgm("/home/dev/nvdla-test/single_layer_test/Gemm/5384_Gemm.pgm")
-x_data = np.array(x_data, dtype="float32")
-x_data = np.reshape(x_data, (1, 1, 5, 7))
-module.set_input('x', tvm.nd.array(x_data))
-module.set_input(**params)
-# run
-module.run()
-out = module.get_output(0)
-print("Ref result:{}".format(out))
-
