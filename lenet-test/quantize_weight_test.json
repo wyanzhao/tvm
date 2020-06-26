@@ -1,0 +1,20 @@
+{
+"null_0" : {
+"scale": 0.00781453,
+"min": 0,
+"max": 0,
+"offset": 0
+},
+"scale" : {
+"scale": 0.00781453,
+"min": 0,
+"max": 0,
+"offset": 0
+},
+"nvdla_conv2d_bias_3" : {
+"scale": 0.0891214,
+"min": 0,
+"max": 0,
+"offset": 0
+}
+}

@@ -234,5 +234,4 @@ conda/pkg
 
 # nvdla files
 *.nvdla
-*.json
 *.protobuf
