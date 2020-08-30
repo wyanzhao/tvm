@@ -235,3 +235,7 @@ conda/pkg
 # nvdla files
 *.nvdla
 *.protobuf
+*.d
+
+# protobuf temp files
+*.cache/
