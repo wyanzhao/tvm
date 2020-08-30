@@ -47,60 +47,36 @@ w1 = relay.var("w1", shape=weight_shape, dtype=dtype)
 b1 = relay.var("b1", shape=(20, ), dtype=dtype)
 
 network = relay.nn.nvdla_conv2d_bias(x, w1, b1, strides=(1, 1,), padding=(0, 0), dilation=(1, 1), groups=1, channels=20, data_layout="NCHW")
-network = relay.nn.max_pool2d(network, pool_size=(2, 2), strides=(2, 2))
-
-w2 = relay.var("w2", shape=(50, 20, 5, 5), dtype=dtype)
-b2 = relay.var("b2", shape=(50, ), dtype=dtype)
-network = relay.nn.nvdla_conv2d_bias(network, w2, b2, strides=(1, 1,), padding=(0, 0), dilation=(1, 1), groups=1, channels=50, data_layout="NCHW")
-network = relay.nn.max_pool2d(network, pool_size=(2, 2), strides=(2, 2))
-
-network = relay.nn.batch_flatten(network)
-
-w3 = relay.var("w3", shape=(500, 800), dtype=dtype)
-b3 = relay.var("b3", shape=(500, ), dtype=dtype)
-network = relay.nn.nvdla_fc(network, w3, b3, units=500)
-network = relay.nn.relu(network)
-
-w4 = relay.var("w4", shape=(10, 500), dtype=dtype)
-b4 = relay.var("b4", shape=(10, ), dtype=dtype)
-network = relay.nn.nvdla_fc(network, w4, b4, units=10)
-
-func = relay.Function([x, w1, b1, w2, b2, w3, b3, w4, b4], network)
+func = relay.Function([x, w1, b1], network)
 
 from nvdla.nvdla_utils import nvdla_analyze_compute_graph, set_nvdla_config
-nvdla_analyze_compute_graph(func, 9, [0, 1])
+nvdla_analyze_compute_graph(func, 3, [0, 1])
 
-nv_config = "nv_medium_1024"
+nv_config = "nv_small_512"
 nv_precision = "int8"
 
 set_nvdla_config(nv_config, nv_precision)
 
-with open("lenet-test/quantize_weight.json", "r") as f:
+with open("/home/dev/tvm-nvdla/conv-scale-info/quantize_weight.json", "r") as f:
     import json
     scale_json = json.load(f)
 from nvdla.nvdla_utils import nvdla_graph_info
 
-nvdla_graph_info['op_infos'][14]['input_index'][0] = 12
+#nvdla_graph_info['op_infos'][14]['input_index'][0] = 12
 nvdla_graph_info['scale_info'] = scale_json
 
 
-w1_data = np.load("lenet-test/tensor.npy")
-b1_data = np.load("lenet-test/tensor1.npy")
-w2_data = np.load("lenet-test/tensor2.npy")
-b2_data = np.load("lenet-test/tensor3.npy")
-w3_data = np.load("lenet-test/tensor4.npy")
-b3_data = np.load("lenet-test/tensor5.npy")
-w4_data = np.load("lenet-test/tensor6.npy")
-b4_data = np.load("lenet-test/tensor7.npy")
+w1_data = np.load("/home/dev/tvm-nvdla/conv-scale-info/tensor.npy")
+b1_data = np.load('/home/dev/tvm-nvdla/conv-scale-info/tensor1.npy')
+w2_data = np.load("/home/dev/tvm-nvdla/conv-scale-info/tensor2.npy")
+b2_data = np.load("/home/dev/tvm-nvdla/conv-scale-info/tensor3.npy")
+w3_data = np.load("/home/dev/tvm-nvdla/conv-scale-info/tensor4.npy")
+b3_data = np.load("/home/dev/tvm-nvdla/conv-scale-info/tensor5.npy")
+w4_data = np.load("/home/dev/tvm-nvdla/conv-scale-info/tensor6.npy")
+b4_data = np.load("/home/dev/tvm-nvdla/conv-scale-info/tensor7.npy")
 
 #NVDLA backend
-params = {'w1': tvm.nd.array(w1_data), "b1": tvm.nd.array(b1_data), 
-"w2": tvm.nd.array(w2_data),
-"b2": tvm.nd.array(b2_data),
-"w3": tvm.nd.array(w3_data),
-"b3": tvm.nd.array(b3_data),
-"w4": tvm.nd.array(w4_data), 
-"b4": tvm.nd.array(b4_data),}
+params = {'w1': tvm.nd.array(w1_data), "b1": tvm.nd.array(b1_data)}
 
 #target = tvm.target.nvdla(options=["-debug"])
 target = tvm.target.nvdla(options=[])

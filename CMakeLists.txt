@@ -73,14 +73,14 @@ include_directories(${DMLC_PATH})
 include_directories(${RANG_PATH})
 include_directories(${COMPILER_RT_PATH})
 include_directories(${PICOJSON_PATH})
-include_directories("nvdla/include"
-"nvdla/external/include" "nvdla/src/compiler/include"
-"nvdla/port/linux" "nvdla/src/common/include")
+include_directories("nvdla/compiler/include"
+"nvdla/compiler/external/include" "nvdla/compiler/src/compiler/include"
+"nvdla/compiler/port/linux" "nvdla/compiler/src/common/include")
 
 set(NVDLA_PATH ${CMAKE_SOURCE_DIR}/nvdla)
 # initial variables
-set(NVDLA_LIB "${NVDLA_PATH}/out/libnvdla_compiler.so" 
-"${NVDLA_PATH}/external/protobuf-2.6/build/src/.libs/libprotobuf.so")
+set(NVDLA_LIB "${NVDLA_PATH}/compiler/out/libnvdla_compiler.so" 
+"${NVDLA_PATH}/compiler/external/protobuf-2.6/build/src/.libs/libprotobuf.so")
 set(TVM_LINKER_LIBS "")
 set(TVM_RUNTIME_LINKER_LIBS ${CMAKE_DL_LIBS})
 
